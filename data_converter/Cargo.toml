@@ -1,0 +1,13 @@
+[package]
+name = "data_converter"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+binary_processor = { path = "../binary_processor" }
+parquet = { version = "40.0", default-features = false, features = ["arrow", "snap"] }
+arrow = "40.0"
+clap = { version = "4.4", default-features = false, features = ["derive", "std", "help", "usage", "error-context"] }
+serde_json = "1.0"
+chrono = "=0.4.31"
+anyhow = "1.0"

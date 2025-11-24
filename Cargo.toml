@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "binary_processor",
+    "data_converter",
+    "sensor_reader",
+]
+resolver = "2"

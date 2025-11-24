@@ -1,0 +1,9 @@
+[package]
+name = "sensor_reader"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+parquet = { version = "40.0", default-features = false, features = ["arrow", "snap"] }
+arrow = "40.0"
+chrono = "=0.4.31"
