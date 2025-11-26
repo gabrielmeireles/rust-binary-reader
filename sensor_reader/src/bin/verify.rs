@@ -1,5 +1,6 @@
 use sensor_reader::{get_sensor_data, SensorData};
 use std::env;
+use std::time::Instant;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
@@ -15,6 +16,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for sensor in sensors_to_check {
         println!("Reading sensor: {}", sensor);
+        let reading_start = Instant::now();
         match get_sensor_data(file_path, sensor) {
             Ok(data) => match data {
                 SensorData::Bit(v) => {
@@ -32,6 +34,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             },
             Err(e) => println!("  Error reading sensor: {}", e),
         }
+        let reading_duration = reading_start.elapsed();
+        println!("  Reading duration: {} ms", reading_duration.as_millis());
     }
 
     Ok(())

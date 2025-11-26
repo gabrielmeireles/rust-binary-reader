@@ -12,13 +12,13 @@ pub fn get_sensor_data<P: AsRef<Path>>(
     file_path: P,
     sensor_name: &str,
 ) -> Result<SensorData, Box<dyn std::error::Error>> {
-    let file = File::open(file_path)?;
+    let file = File::open(file_path.as_ref())?;
     let reader = SerializedFileReader::new(file)?;
     let metadata = reader.metadata();
 
-    // Find column index by name
+    // Find column by name to verify it exists
     let schema = metadata.file_metadata().schema();
-    let column_index = schema
+    let _column_exists = schema
         .get_fields()
         .iter()
         .position(|f| f.name() == sensor_name)
@@ -46,14 +46,11 @@ pub fn get_sensor_data<P: AsRef<Path>>(
 
     // Check if column exists in arrow schema
     let arrow_schema = builder.schema();
-    let _idx = arrow_schema.index_of(sensor_name)?;
+    let column_idx = arrow_schema.index_of(sensor_name)?;
 
     // Build reader with projection
-    // We can use the mask to select columns
-    let mask = parquet::arrow::ProjectionMask::named_roots(
-        builder.parquet_schema(),
-        vec![sensor_name.to_string()],
-    );
+    // We can use the mask to select columns by their root index
+    let mask = parquet::arrow::ProjectionMask::roots(builder.parquet_schema(), vec![column_idx]);
     let mut reader = builder.with_projection(mask).build()?;
 
     let mut result_data: Option<SensorData> = None;

@@ -6,6 +6,9 @@ use std::io::{BufWriter, Write};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 fn main() -> std::io::Result<()> {
+    let parent_dir = ".data";
+    std::fs::create_dir_all(parent_dir)?;
+
     // Generate Schema with 1000 channels
     let mut channels = Vec::new();
     for i in 0..1000 {
@@ -23,10 +26,10 @@ fn main() -> std::io::Result<()> {
 
     // Save schema
     let schema_json = serde_json::to_string_pretty(&schema)?;
-    std::fs::write("schema.json", schema_json)?;
+    std::fs::write(format!("{}/schema.json", parent_dir), schema_json)?;
     println!("Generated schema.json with 1000 channels");
 
-    let file = File::create("data.bin")?;
+    let file = File::create(format!("{}/data.bin", parent_dir))?;
     let mut writer = BufWriter::new(file);
     let mut rng = rand::thread_rng();
 

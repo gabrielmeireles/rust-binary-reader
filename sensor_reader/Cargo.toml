@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-parquet = { version = "40.0", default-features = false, features = ["arrow", "snap"] }
-arrow = "40.0"
-chrono = "=0.4.31"
+parquet = { version = "53.0", default-features = false, features = ["arrow", "snap"] }
+arrow = "53.0"
+chrono = "0.4.34"

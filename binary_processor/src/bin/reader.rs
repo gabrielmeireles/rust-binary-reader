@@ -9,17 +9,7 @@ use std::time::Instant;
 fn read_channels(
     filename: &str,
     schema: &Schema,
-    start_idx: usize,
-    end_idx: usize,
 ) -> std::io::Result<(Vec<ChannelData>, std::time::Duration, std::time::Duration)> {
-    if start_idx >= schema.channels.len() || end_idx >= schema.channels.len() || start_idx > end_idx
-    {
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::InvalidInput,
-            "Invalid channel range",
-        ));
-    }
-
     let file = File::open(filename)?;
 
     // --- Phase 1: Mmap (Zero-copy I/O) ---
@@ -28,29 +18,21 @@ fn read_channels(
     let io_duration = io_start.elapsed();
 
     // Calculate offsets
-    let mut pre_skip = 8; // Timestamp
-    for i in 0..start_idx {
-        pre_skip += schema.channels[i].data_type.size();
-    }
+    let pre_skip = 8; // Timestamp
+    let block_size = schema
+        .channels
+        .iter()
+        .map(|c| c.data_type.size())
+        .sum::<usize>();
 
-    let mut block_size = 0;
-    for i in start_idx..=end_idx {
-        block_size += schema.channels[i].data_type.size();
-    }
-
-    let mut post_skip = 0;
-    for i in (end_idx + 1)..schema.channels.len() {
-        post_skip += schema.channels[i].data_type.size();
-    }
-
-    let row_size = pre_skip + block_size + post_skip;
+    let row_size = pre_skip + block_size;
 
     let total_rows = mmap.len() / row_size;
 
     // --- Phase 2: Parallel Parsing ---
     let parse_start = Instant::now();
 
-    let num_channels = end_idx - start_idx + 1;
+    let num_channels = schema.channels.len();
     let chunk_size = 10_000;
     let num_chunks = (total_rows + chunk_size - 1) / chunk_size;
 
@@ -69,8 +51,7 @@ fn read_channels(
             // Initialize mini-columns
             let mut chunk_results = Vec::with_capacity(num_channels);
             for i in 0..num_channels {
-                let channel_idx = start_idx + i;
-                match schema.channels[channel_idx].data_type {
+                match schema.channels[i].data_type {
                     DataType::Bit => {
                         chunk_results.push(ChannelData::Bit(Vec::with_capacity(rows_in_chunk)))
                     }
@@ -115,8 +96,7 @@ fn read_channels(
 
     // Initialize final vectors
     for i in 0..num_channels {
-        let channel_idx = start_idx + i;
-        match schema.channels[channel_idx].data_type {
+        match schema.channels[i].data_type {
             DataType::Bit => final_results.push(ChannelData::Bit(Vec::with_capacity(total_rows))),
             DataType::Int => final_results.push(ChannelData::Int(Vec::with_capacity(total_rows))),
             DataType::Float => {
@@ -147,16 +127,11 @@ fn main() -> std::io::Result<()> {
     let schema_content = std::fs::read_to_string("schema.json")?;
     let schema: Schema = serde_json::from_str(&schema_content)?;
 
-    // Config: Read channels from index start to end (inclusive)
-    let start_idx = 0;
-    let end_idx = schema.channels.len() - 1;
-
-    println!("Reading channels {} to {}...", start_idx, end_idx);
+    println!("Reading all channels...");
 
     let start = Instant::now();
 
-    let (channels_data, io_time, parse_time) =
-        read_channels("data.bin", &schema, start_idx, end_idx)?;
+    let (channels_data, io_time, parse_time) = read_channels("data.bin", &schema)?;
 
     let total_duration = start.elapsed();
     let num_rows = channels_data[0].len();
@@ -187,10 +162,13 @@ fn main() -> std::io::Result<()> {
             ChannelData::Float(v) => println!("{:?}", &v[0..5.min(v.len())]),
         };
 
-        print!("Channel {} (first read channel): ", start_idx);
+        print!("Channel {} (first read channel): ", 0);
         print_first_5(&channels_data[0]);
 
-        print!("Channel {} (last read channel): ", end_idx);
+        print!(
+            "Channel {} (last read channel): ",
+            schema.channels.len() - 1
+        );
         print_first_5(&channels_data[channels_data.len() - 1]);
     }
 

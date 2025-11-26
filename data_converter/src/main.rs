@@ -8,20 +8,21 @@ use parquet::basic::Compression;
 use parquet::file::properties::WriterProperties;
 use std::fs::File;
 use std::sync::Arc;
+use std::time::Instant;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
     /// Input binary file
-    #[arg(short, long)]
+    #[arg(short, long, default_value = ".data/data.bin")]
     input: String,
 
     /// Output parquet file
-    #[arg(short, long)]
+    #[arg(short, long, default_value = ".data/output.parquet")]
     output: String,
 
     /// Schema file
-    #[arg(short, long, default_value = "schema.json")]
+    #[arg(short, long, default_value = ".data/schema.json")]
     schema: String,
 
     /// Memory limit in MB (approximate)
@@ -30,6 +31,8 @@ struct Args {
 }
 
 fn main() -> anyhow::Result<()> {
+    let parsing_start = Instant::now();
+
     let args = Args::parse();
 
     println!("Reading schema from {}...", args.schema);
@@ -115,6 +118,8 @@ fn main() -> anyhow::Result<()> {
 
     writer.close()?;
     println!("Conversion complete. Output saved to {}", args.output);
+    let parsing_duration = parsing_start.elapsed();
+    println!("Parsing duration: {} ms", parsing_duration.as_millis());
 
     Ok(())
 }

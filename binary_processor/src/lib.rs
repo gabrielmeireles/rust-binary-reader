@@ -96,7 +96,6 @@ impl BatchReader {
 
         let rows_to_read = std::cmp::min(batch_size, self.total_rows - self.current_row);
         let start_row = self.current_row;
-        let end_row = start_row + rows_to_read;
 
         let num_channels = self.schema.channels.len();
         let mut batch_results = Vec::with_capacity(num_channels);
@@ -115,20 +114,6 @@ impl BatchReader {
                 }
             }
         }
-
-        let mut offset = start_row * self.row_size + 8; // Skip timestamp for now, or read it if needed.
-                                                        // Wait, the user requirement says "read this data".
-                                                        // The original reader skipped timestamp (pre_skip = 8).
-                                                        // Let's assume we need to read channels.
-                                                        // If we need timestamp, we should add it. For now, let's stick to channels as per original reader.
-                                                        // Actually, for "putting it into a better format", we PROBABLY want the timestamp too.
-                                                        // But the schema doesn't have a timestamp field. It's implicit.
-                                                        // Let's add a Timestamp channel implicitly or just handle it.
-                                                        // For now, I will stick to the schema channels to match the original logic,
-                                                        // but I should probably add a Timestamp column to the output parquet.
-                                                        // Let's modify this to return Timestamp as well?
-                                                        // The user said "read this data and then put it into a better format".
-                                                        // Timestamps are data.
 
         for idx in 0..rows_to_read {
             let row_start = (start_row + idx) * self.row_size;

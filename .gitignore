@@ -1,6 +1,4 @@
 /target
 build_log.txt
 
-data.bin
-data.parquet
-schema.json
+.data/*
